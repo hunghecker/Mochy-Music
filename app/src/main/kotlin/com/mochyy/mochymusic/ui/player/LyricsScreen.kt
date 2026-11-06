@@ -237,6 +237,7 @@ fun LyricsScreen(
 
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
     val lyricsEntity by playerConnection.currentLyrics.collectAsState(initial = null)
+    val completedLyricsIds by viewModel.completedIds.collectAsState()
     val progress by playerConnection.progressState.collectAsState()
     val lyricsOffsetMs by playerConnection.lyricsOffsetMs.collectAsState()
 
@@ -590,7 +591,7 @@ fun LyricsScreen(
                 }
         ) {
             if (lines.isEmpty()) {
-                if (lyricsEntity == null) {
+                if (lyricsEntity == null && mediaMetadata?.id !in completedLyricsIds) {
 
                     LyricsLoadingDots(modifier = Modifier.align(Alignment.Center))
                 } else {

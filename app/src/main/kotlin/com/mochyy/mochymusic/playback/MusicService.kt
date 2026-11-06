@@ -989,11 +989,19 @@ class MusicService :
         ) { mediaMetadata, showLyrics ->
             mediaMetadata to showLyrics
         }.collectLatest(scope) { (mediaMetadata, showLyrics) ->
-            if (showLyrics && mediaMetadata != null && database.lyrics(mediaMetadata.id)
-                    .first() == null
-            ) {
-                val lyricsWithProvider = lyricsHelper.getLyrics(mediaMetadata)
-                // offline: nothing was found because nothing was asked; try again when online
+            if (showLyrics && mediaMetadata != null) {
+                val existing = database.lyrics(mediaMetadata.id).first()
+                // Local tags take precedence over old provider results and cached misses.
+                val embedded = lyricsHelper.getEmbeddedLyrics(mediaMetadata)
+                val lyricsWithProvider = embedded ?: if (existing == null) {
+                    lyricsHelper.getLyrics(mediaMetadata)
+                } else {
+                    return@collectLatest
+                }
+                if (existing?.lyrics == lyricsWithProvider.lyrics && existing.provider == lyricsWithProvider.provider) {
+                    return@collectLatest
+                }
+                // An offline skip is transient; don't persist it as "not found".
                 if (lyricsWithProvider.provider != com.mochyy.mochymusic.lyrics.LyricsHelper.NoConnectionProvider) {
                     database.query {
                         upsert(

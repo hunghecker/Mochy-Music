@@ -1,7 +1,7 @@
 // EmbeddedLyrics.kt
 //
 // Lyrics an audio file carries in its own tags: ID3 in MP3s (USLT, synced SYLT, or a TXXX
-// "LYRICS"), Vorbis comments in FLAC, and the ©lyr atom in M4A. Imported files carry their lyrics
+// "LYRICS"), Vorbis comments in FLAC/Ogg/Opus, and the ©lyr atom in M4A. Imported files carry their lyrics
 // this way often enough, and these are there offline. Only the tags are read, never the audio.
 
 package com.mochyy.mochymusic.lyrics
@@ -30,6 +30,7 @@ object EmbeddedLyrics {
                 if (source.read(end, 4).startsWith("fLaC")) flac(source, end) else null
             }
             head.startsWith("fLaC") -> flac(source, 0)
+            head.startsWith("OggS") -> ogg(source)
             head.size >= 8 && String(head, 4, 4, Charsets.ISO_8859_1) == "ftyp" -> mp4(source)
             else -> null
         }
@@ -48,14 +49,15 @@ object EmbeddedLyrics {
         val header = source.read(0, 10)
         if (header.size < 10) return null
         val major = header[3].toInt()
-        if (major != 3 && major != 4) return null
+        if (major !in 2..4) return null
+        if (major == 2 && header[5].toInt() and 0x40 != 0) return null // compressed tag
         val flags = header[5].toInt()
         val tagSize = syncsafe(header, 6)
         if (tagSize <= 0) return null
         // Frames are walked straight off the file, so cover art - often most of the tag, and
         // megabytes of it - is skipped rather than read. A v2.3 tag written unsynchronised is the
         // exception: it has to be undone as a whole before its frames can be found.
-        val tag: Source = if (major == 3 && flags and 0x80 != 0) {
+        val tag: Source = if (major <= 3 && flags and 0x80 != 0) {
             if (tagSize > MaxTagBytes) return null
             BytesSource(deUnsync(source.read(10, tagSize)))
         } else {
@@ -63,20 +65,33 @@ object EmbeddedLyrics {
         }
 
         var pos = 0L
-        if (flags and 0x40 != 0) {
+        if (major >= 3 && flags and 0x40 != 0) {
             // the extended header: v2.4 counts itself in its size, v2.3 doesn't
             val extended = tag.read(0, 4)
             if (extended.size < 4) return null
             pos = if (major == 4) syncsafe(extended, 0).toLong() else int32(extended, 0).toLong() + 4
         }
         val found = ArrayList<String>()
-        while (pos + 10 <= tag.size) {
-            val frameHeader = tag.read(pos, 10)
-            if (frameHeader.size < 10 || frameHeader[0].toInt() == 0) break // padding
-            val id = String(frameHeader, 0, 4, Charsets.ISO_8859_1)
-            val frameSize = if (major == 4) syncsafe(frameHeader, 4) else int32(frameHeader, 4)
-            val frameFlags = (frameHeader[8].toInt() and 0xFF shl 8) or (frameHeader[9].toInt() and 0xFF)
-            val start = pos + 10
+        val headerSize = if (major == 2) 6 else 10
+        while (pos + headerSize <= tag.size) {
+            val frameHeader = tag.read(pos, headerSize)
+            if (frameHeader.size < headerSize || frameHeader[0].toInt() == 0) break // padding
+            val frameId = String(frameHeader, 0, if (major == 2) 3 else 4, Charsets.ISO_8859_1)
+            val id = if (major == 2) when (frameId) {
+                "ULT" -> "USLT"
+                "SLT" -> "SYLT"
+                "TXX" -> "TXXX"
+                else -> frameId
+            } else frameId
+            val frameSize = when (major) {
+                2 -> ((frameHeader[3].toInt() and 0xFF) shl 16) or
+                    ((frameHeader[4].toInt() and 0xFF) shl 8) or (frameHeader[5].toInt() and 0xFF)
+                4 -> syncsafe(frameHeader, 4)
+                else -> int32(frameHeader, 4)
+            }
+            val frameFlags = if (major == 2) 0 else
+                ((frameHeader[8].toInt() and 0xFF) shl 8) or (frameHeader[9].toInt() and 0xFF)
+            val start = pos + headerSize
             if (frameSize <= 0 || start + frameSize > tag.size) break
             pos = start + frameSize
 
@@ -191,7 +206,9 @@ object EmbeddedLyrics {
     private fun vorbisComments(block: ByteArray): String? {
         var pos = 0
         if (pos + 4 > block.size) return null
-        pos += 4 + le32(block, pos) // vendor string
+        val vendorLength = le32(block, pos)
+        if (vendorLength < 0 || vendorLength > block.size - 4) return null
+        pos = 4 + vendorLength
         if (pos + 4 > block.size) return null
         val count = le32(block, pos)
         pos += 4
@@ -200,13 +217,57 @@ object EmbeddedLyrics {
             if (pos + 4 > block.size) break
             val length = le32(block, pos)
             pos += 4
-            if (length < 0 || pos + length > block.size) break
+            if (length < 0 || length > block.size - pos) break
             val comment = String(block, pos, length, Charsets.UTF_8)
             pos += length
             val eq = comment.indexOf('=')
             if (eq > 0 && comment.substring(0, eq).trim().uppercase() in LyricKeys) found += comment.substring(eq + 1)
         }
         return pick(found)
+    }
+
+    // ---- Ogg Vorbis / Opus --------------------------------------------------------------------
+
+    /** Reassembles header packets across pages, stopping before reading the audio packets. */
+    private fun ogg(source: Source): String? {
+        var pos = 0L
+        var serial: ByteArray? = null
+        val packet = java.io.ByteArrayOutputStream()
+        var headerPackets = 0
+        repeat(256) {
+            val header = source.read(pos, 27)
+            if (header.size != 27 || !header.startsWith("OggS") || header[4].toInt() != 0) return null
+            val pageSerial = header.copyOfRange(14, 18)
+            if (serial == null) serial = pageSerial
+            val count = header[26].toInt() and 0xFF
+            val segments = source.read(pos + 27, count)
+            if (segments.size != count) return null
+            var bodyPos = pos + 27 + count
+            for (segment in segments) {
+                val length = segment.toInt() and 0xFF
+                if (pageSerial.contentEquals(serial)) {
+                    if (packet.size() + length > MaxTagBytes) return null
+                    val bytes = source.read(bodyPos, length)
+                    if (bytes.size != length) return null
+                    packet.write(bytes)
+                    if (length < 255) {
+                        val bytesPacket = packet.toByteArray()
+                        when {
+                            bytesPacket.startsWith("OpusTags") -> return vorbisComments(bytesPacket.copyOfRange(8, bytesPacket.size))
+                            bytesPacket.size >= 7 && bytesPacket[0].toInt() == 3 &&
+                                bytesPacket.copyOfRange(1, 7).startsWith("vorbis") ->
+                                return vorbisComments(bytesPacket.copyOfRange(7, bytesPacket.size))
+                        }
+                        // Identification then comments: never scan the audio looking for tags.
+                        if (++headerPackets >= 2) return null
+                        packet.reset()
+                    }
+                }
+                bodyPos += length
+            }
+            pos = bodyPos
+        }
+        return null
     }
 
     // ---- MP4 / M4A ----------------------------------------------------------------------------

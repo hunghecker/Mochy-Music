@@ -80,19 +80,14 @@ constructor(
         mediaMetadata: MediaMetadata,
         forceRefresh: Boolean = false,
     ): LyricsWithProvider {
+        // Read local tags before the provider cache: an old online result must not hide
+        // lyrics that were added to the audio file after it was imported.
+        getEmbeddedLyrics(mediaMetadata)?.let { return it }
+
         if (forceRefresh) {
             bestCache.remove(mediaMetadata.id)
         } else {
             bestCache.get(mediaMetadata.id)?.let { return it }
-        }
-
-        // An imported file's own lyrics, from its tags: they're the file's, and they're there
-        // offline. Read before anything goes online, so offline mode still has them.
-        // Off the caller's thread: the player asks from the main one, and this reads the file.
-        mediaMetadata.localUri?.let { uri ->
-            withContext(Dispatchers.IO) { readEmbeddedLyrics(context, android.net.Uri.parse(uri)) }?.let { lyrics ->
-                return LyricsWithProvider(lyrics, EmbeddedLyrics.Provider).also { bestCache.put(mediaMetadata.id, it) }
-            }
         }
 
         // offline mode counts as no network: lyrics already saved for the song still show
@@ -125,6 +120,14 @@ constructor(
         val result = LyricsWithProvider(best.lyrics, best.providerName)
         bestCache.put(mediaMetadata.id, result)
         return result
+    }
+
+    /** Reads only the audio file, including in offline mode. Does not cache missing tags. */
+    suspend fun getEmbeddedLyrics(mediaMetadata: MediaMetadata): LyricsWithProvider? {
+        val uri = mediaMetadata.localUri?.takeIf { it.isNotBlank() } ?: return null
+        return withContext(Dispatchers.IO) {
+            readEmbeddedLyrics(context, android.net.Uri.parse(uri))
+        }?.let { LyricsWithProvider(it, EmbeddedLyrics.Provider) }
     }
 
     /**
