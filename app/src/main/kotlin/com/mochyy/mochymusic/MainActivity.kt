@@ -917,9 +917,6 @@ class MainActivity : ComponentActivity() {
                             navController.navigate("developer_space?person=$personIndex")
                         },
                     )
-                    com.mochyy.mochymusic.ui.screens.donate.DonatePromptScheduler(
-                        enabled = setupCompleted && onboardedHere && !forceShowSetup,
-                    )
                         SetupWizardContainer(
                             isVisible = !setupCompleted || !onboardedHere || forceShowSetup,
                             onSetupCompleted = { username, uri ->

@@ -59,7 +59,6 @@ import com.mochyy.mochymusic.core.updater.GithubRepoUrl
 import com.mochyy.mochymusic.ui.component.PopupSheetState
 import com.mochyy.mochymusic.ui.component.pressBounce
 import com.mochyy.mochymusic.ui.player.menu.MenuRowSurface
-import com.mochyy.mochymusic.ui.screens.donate.showSupportSheet
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONArray
@@ -415,10 +414,6 @@ private fun ColumnScope.AboutSheetContent(
             SectionHeader("actions")
             Spacer(Modifier.height(8.dp))
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                AboutPillRow(
-                    text = "Support me please :3 \u2192",
-                    onClick = { popup.showSupportSheet() },
-                )
                 AboutPillRow(
                     text = "Mochy Music github \u2192",
                     onClick = { context.openUrl(GithubRepoUrl) },
