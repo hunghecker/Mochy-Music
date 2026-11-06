@@ -42,6 +42,7 @@ private class LanguageOption(val tag: String, val nativeName: String, val englis
 }
 
 internal fun appLanguageNativeName(tag: String): String {
+    if (Locale.forLanguageTag(tag).language == "vi") return "Tiếng Việt"
     if (tag == "id" || tag == "in") return "Bahasa Indonesia"
     val locale = Locale.forLanguageTag(tag)
     return locale.getDisplayName(locale).ifBlank { tag }
