@@ -869,15 +869,16 @@ internal fun extractAudioMetadata(
         // track and disc tags often read "3/12", the part before the slash is the number
         fun number(key: Int) = retriever.extractMetadata(key)?.substringBefore('/')?.trim()?.toIntOrNull()
         LocalAudioMetadata(
-            title = title,
-            artist = artist,
-            album = album,
+            title = com.mochyy.mochymusic.importer.MetadataTextRepair.repair(title),
+            artist = com.mochyy.mochymusic.importer.MetadataTextRepair.repair(artist),
+            album = album?.let(com.mochyy.mochymusic.importer.MetadataTextRepair::repair),
             durationSeconds = (durationMs / 1000).toInt(),
             mimeType = mimeType,
             bitrate = bitrate,
             sampleRate = sampleRate,
             embeddedArtwork = embeddedArtwork,
-            albumArtist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST),
+            albumArtist = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST)
+                ?.let(com.mochyy.mochymusic.importer.MetadataTextRepair::repair),
             trackNumber = number(MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER),
             discNumber = number(MediaMetadataRetriever.METADATA_KEY_DISC_NUMBER),
             year = retriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_YEAR)?.take(4)?.toIntOrNull(),

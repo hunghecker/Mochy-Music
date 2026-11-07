@@ -38,6 +38,7 @@ internal fun LazyListScope.libraryLocalTab(
     onImport: () -> Unit,
     onScan: () -> Unit,
     onManage: () -> Unit,
+    onRepairMetadata: () -> Unit,
     navController: NavController,
 ) {
     item(key = "local_import") {
@@ -68,6 +69,11 @@ internal fun LazyListScope.libraryLocalTab(
     // an empty page, and the import card above already says what to do.
     if (data.songs.isNotEmpty()) {
         libraryShelfCards(data, navController, spaceAbove = 16.dp)
+    }
+
+    item(key = "local_repair_metadata") {
+        Spacer(modifier = Modifier.height(12.dp))
+        LibraryManagePill(text = androidx.compose.ui.res.stringResource(com.mochyy.mochymusic.R.string.metadata_repair_action), onClick = onRepairMetadata)
     }
 
     item(key = "local_manage") {

@@ -23,6 +23,7 @@ import com.mochyy.mochymusic.playback.ExoDownloadService
 import com.mochyy.mochymusic.ui.component.TopToaster
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -118,6 +119,50 @@ class LibraryImportViewModel @Inject constructor(
         }
         if (files.isEmpty()) return false
         return startFolderImport(files, emptyMessage = null)
+    }
+
+    private var repairingMetadata = false
+
+    /** Works offline, on stored text only; file tags and online song identities are untouched. */
+    fun repairLocalMetadata() {
+        if (repairingMetadata) return
+        repairingMetadata = true
+        viewModelScope.launch {
+            try {
+                val count = withContext(Dispatchers.IO) {
+                    var count = 0
+                    val fix = com.mochyy.mochymusic.importer.MetadataTextRepair::repair
+                    database.localSongsByRowIdAsc().first().forEach { row ->
+                        kotlinx.coroutines.currentCoroutineContext().ensureActive()
+                        val title = fix(row.song.title)
+                        val albumName = row.song.albumName?.let(fix)
+                        val artists = row.artists.map { artist ->
+                            val name = fix(artist.name)
+                            if (name == artist.name) artist else
+                                database.artistByName(name) ?: com.mochyy.mochymusic.db.entities.ArtistEntity(
+                                    id = com.mochyy.mochymusic.db.entities.ArtistEntity.generateArtistId(),
+                                    name = name, isLocal = true,
+                                )
+                        }
+                        val album = row.album?.let { if (it.isLocal) it.copy(title = fix(it.title)) else it }
+                        if (title != row.song.title || albumName != row.song.albumName || artists != row.artists || album != row.album) {
+                            database.repairLocalMetadataText(
+                                row.song.copy(title = title, albumName = albumName), artists,
+                                row.artists.mapIndexed { index, artist -> com.mochyy.mochymusic.db.entities.SongArtistMap(row.id, artist.id, index) },
+                                album,
+                            )
+                            count++
+                        }
+                    }
+                    count
+                }
+                TopToaster.show(context.getString(R.string.metadata_repair_result, count), iconRes = R.drawable.library_music)
+            } catch (e: kotlinx.coroutines.CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                TopToaster.show(context.getString(R.string.metadata_repair_failed), iconRes = R.drawable.library_music)
+            } finally { repairingMetadata = false }
+        }
     }
 
     /** True if Mochy has music folders the user picked. */

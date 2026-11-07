@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="metadata_repair_action">Sửa lỗi chữ trong metadata</string>
+    <string name="metadata_repair_result">Đã sửa metadata của %1$d bài. File gốc không thay đổi.</string>
+    <string name="metadata_repair_failed">Không sửa được metadata. Vui lòng thử lại.</string>
+</resources>

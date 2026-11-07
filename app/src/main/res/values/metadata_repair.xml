@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="metadata_repair_action">Repair metadata encoding</string>
+    <string name="metadata_repair_result">Repaired metadata for %1$d songs. Files were not modified.</string>
+    <string name="metadata_repair_failed">Could not repair metadata. Please try again.</string>
+</resources>

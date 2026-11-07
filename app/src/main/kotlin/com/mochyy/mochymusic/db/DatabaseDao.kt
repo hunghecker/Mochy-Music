@@ -119,6 +119,19 @@ interface DatabaseDao {
         SongSortType.PLAY_TIME -> songsByPlayTimeAsc()
     }.map { it.reversed(descending) }
 
+    /** Repair one local song and its artist links atomically; never rename shared artists. */
+    @Transaction
+    fun repairLocalMetadataText(song: SongEntity, artists: List<ArtistEntity>, oldLinks: List<SongArtistMap>, album: AlbumEntity?) {
+        require(song.isLocal)
+        update(song)
+        oldLinks.forEach { delete(it) }
+        artists.forEachIndexed { index, artist ->
+            insert(artist)
+            insert(SongArtistMap(songId = song.id, artistId = artist.id, position = index))
+        }
+        if (album != null && album.isLocal) update(album)
+    }
+
     @Transaction
     @Query("SELECT * FROM song WHERE isLocal = 1 ORDER BY rowId")
     fun localSongsByRowIdAsc(): Flow<List<Song>>

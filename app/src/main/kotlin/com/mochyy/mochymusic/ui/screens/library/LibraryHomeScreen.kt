@@ -196,6 +196,7 @@ fun LibraryHomeScreen(
                         hasStorageAccess = localActions.hasStorageAccess,
                         onImport = localActions::importFromPhone,
                         onScan = localActions::scanPhone,
+                        onRepairMetadata = importViewModel::repairLocalMetadata,
                         onManage = {
                             menuState.showManageLocalSheet(
                                 viewModel = importViewModel,
