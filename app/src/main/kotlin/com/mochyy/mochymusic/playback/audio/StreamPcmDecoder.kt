@@ -41,13 +41,16 @@ internal object StreamPcmDecoder {
         uri: Uri,
         key: String,
         limitUs: Long,
+        localContext: android.content.Context? = null,
         onPcm: (pcm: ShortBuffer, channels: Int, sampleRate: Int, presentationUs: Long) -> Unit,
     ): Outcome {
-        val source = Media3MediaDataSource(factory, uri, key)
+        val nativeLocal = localContext != null && uri.scheme in setOf("content", "file")
+        val source = if (nativeLocal) null else Media3MediaDataSource(factory, uri, key)
         val extractor = MediaExtractor()
         var codec: MediaCodec? = null
         try {
-            extractor.setDataSource(source)
+            if (nativeLocal) extractor.setDataSource(requireNotNull(localContext), uri, null)
+            else extractor.setDataSource(requireNotNull(source))
             val track = (0 until extractor.trackCount).firstOrNull {
                 extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("audio/") == true
             } ?: error("no audio track in the stream")
@@ -109,7 +112,7 @@ internal object StreamPcmDecoder {
             codec?.runCatching { stop() }
             codec?.runCatching { release() }
             runCatching { extractor.release() }
-            runCatching { source.close() }
+            runCatching { source?.close() }
         }
     }
 

@@ -30,8 +30,8 @@ internal fun LocalAudioRecognitionAction(song: Song) {
     var busy by remember(song.id) { mutableStateOf(false) }
     var saving by remember(song.id) { mutableStateOf(false) }
     var result by remember(song.id) { mutableStateOf<RecognitionResult?>(null) }
-    var error by remember(song.id) { mutableStateOf(false) }
-    TextButton(onClick = { open = true; result = null; error = false }, enabled = !busy && !saving) {
+    var error by remember(song.id) { mutableStateOf<Int?>(null) }
+    TextButton(onClick = { open = true; result = null; error = null }, enabled = !busy && !saving) {
         Text(stringResource(R.string.local_recognize_action))
     }
     if (open) AlertDialog(
@@ -42,7 +42,7 @@ internal fun LocalAudioRecognitionAction(song: Song) {
             Text(when {
                 saving -> stringResource(R.string.local_recognize_saving)
                 busy -> stringResource(R.string.local_recognize_busy)
-                error -> stringResource(R.string.local_recognize_error)
+                error != null -> stringResource(requireNotNull(error))
                 match != null -> stringResource(R.string.local_recognize_preview, song.title, song.artists.joinToString { it.name }, match.title, match.artist)
                 else -> stringResource(R.string.local_recognize_consent)
             })
@@ -51,12 +51,27 @@ internal fun LocalAudioRecognitionAction(song: Song) {
             if (!busy && !saving) TextButton(onClick = {
                 val match = result
                 if (match == null) {
-                    busy = true; error = false
+                    busy = true; error = null
                     scope.launch {
                         try { result = LocalFileRecognition.recognize(context, android.net.Uri.parse(song.song.localUri), song.song.duration) }
-                        catch (_: kotlinx.coroutines.TimeoutCancellationException) { error = true }
+                        catch (_: kotlinx.coroutines.TimeoutCancellationException) { error = R.string.local_recognize_timeout }
                         catch (e: CancellationException) { throw e }
-                        catch (_: Exception) { error = true }
+                        catch (e: Exception) {
+                            error = when {
+                                com.mochyy.mochymusic.utils.OfflineMode.isOn -> R.string.local_recognize_offline
+                                e is com.mochyy.mochymusic.recognition.RecognitionFailure -> when (e.stage) {
+                                    com.mochyy.mochymusic.recognition.RecognitionFailure.Stage.DECODE -> R.string.local_recognize_decode
+                                    com.mochyy.mochymusic.recognition.RecognitionFailure.Stage.PERMISSION -> R.string.local_recognize_permission
+                                    com.mochyy.mochymusic.recognition.RecognitionFailure.Stage.SHORT -> R.string.local_recognize_short
+                                    com.mochyy.mochymusic.recognition.RecognitionFailure.Stage.RESAMPLE -> R.string.local_recognize_resample
+                                    com.mochyy.mochymusic.recognition.RecognitionFailure.Stage.FINGERPRINT -> R.string.local_recognize_fingerprint
+                                    com.mochyy.mochymusic.recognition.RecognitionFailure.Stage.NO_MATCH -> R.string.local_recognize_no_match
+                                    com.mochyy.mochymusic.recognition.RecognitionFailure.Stage.TIMEOUT -> R.string.local_recognize_timeout
+                                    else -> R.string.local_recognize_service
+                                }
+                                else -> R.string.local_recognize_service
+                            }
+                        }
                         finally { busy = false }
                     }
                 } else {
@@ -77,7 +92,7 @@ internal fun LocalAudioRecognitionAction(song: Song) {
                             open = false
                             TopToaster.show(context.getString(R.string.local_recognize_saved), iconRes = R.drawable.library_music)
                         } catch (e: CancellationException) { throw e }
-                        catch (_: Exception) { result = null; error = true }
+                        catch (_: Exception) { result = null; error = R.string.local_recognize_save_error }
                         finally { saving = false }
                     }
                 }

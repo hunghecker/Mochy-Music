@@ -9,4 +9,14 @@
     <string name="local_recognize_saved">Saved the identified title and artist</string>
     <string name="local_recognize_apply">Apply result</string>
     <string name="local_recognize_start">Identify online</string>
+    <string name="local_recognize_offline">Offline mode is enabled. Turn it off to identify audio online.</string>
+    <string name="local_recognize_decode">Could not decode this local file. Check that it still exists and that its audio format is supported.</string>
+    <string name="local_recognize_permission">The app no longer has read access to this file. Grant access again or import it again.</string>
+    <string name="local_recognize_short">The decoded sample is shorter than 3 seconds. Try a longer audio file.</string>
+    <string name="local_recognize_resample">Could not convert the audio sample to the required sample rate.</string>
+    <string name="local_recognize_fingerprint">Could not create an audio fingerprint from this sample.</string>
+    <string name="local_recognize_no_match">Shazam returned no matching song. The recording or version may not be in its catalogue.</string>
+    <string name="local_recognize_timeout">Recognition timed out. Check your connection and try again.</string>
+    <string name="local_recognize_service">The recognition service request failed. Check the connection; the service may be unavailable or refusing requests.</string>
+    <string name="local_recognize_save_error">A result was found but could not be saved. The library song may have been removed.</string>
 </resources>

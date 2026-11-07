@@ -9,4 +9,14 @@
     <string name="local_recognize_saved">Đã lưu tên bài và nghệ sĩ nhận diện được</string>
     <string name="local_recognize_apply">Áp dụng kết quả</string>
     <string name="local_recognize_start">Nhận diện trực tuyến</string>
+    <string name="local_recognize_offline">Đang bật chế độ ngoại tuyến. Hãy tắt chế độ này để nhận diện trực tuyến.</string>
+    <string name="local_recognize_decode">Không giải mã được file nhạc. Kiểm tra file còn tồn tại và định dạng âm thanh có được hỗ trợ không.</string>
+    <string name="local_recognize_permission">Ứng dụng không còn quyền đọc file. Hãy cấp quyền lại hoặc nhập lại file.</string>
+    <string name="local_recognize_short">Đoạn âm thanh giải mã được ngắn hơn 3 giây. Hãy thử file dài hơn.</string>
+    <string name="local_recognize_resample">Không chuyển đổi được tần số lấy mẫu của đoạn âm thanh.</string>
+    <string name="local_recognize_fingerprint">Không tạo được dấu vân tay từ đoạn âm thanh này.</string>
+    <string name="local_recognize_no_match">Shazam không tìm thấy bài phù hợp. Bản ghi hoặc phiên bản này có thể chưa có trong danh mục.</string>
+    <string name="local_recognize_timeout">Nhận diện quá thời gian chờ. Kiểm tra mạng rồi thử lại.</string>
+    <string name="local_recognize_service">Yêu cầu tới dịch vụ nhận diện thất bại. Kiểm tra mạng; dịch vụ có thể đang lỗi hoặc từ chối yêu cầu.</string>
+    <string name="local_recognize_save_error">Đã có kết quả nhưng không lưu được. Bài hát có thể đã bị xóa khỏi thư viện.</string>
 </resources>
