@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="local_recognize_action">Nhận diện bài hát từ âm thanh</string>
+    <string name="local_recognize_saving">Đang lưu thông tin…</string>
+    <string name="local_recognize_busy">Đang đọc một đoạn âm thanh và nhận diện trực tuyến…</string>
+    <string name="local_recognize_error">Chưa nhận diện được. Kiểm tra mạng, tắt chế độ ngoại tuyến rồi thử lại. Đoạn quá ngắn, bản remix hoặc file không hỗ trợ có thể không có kết quả.</string>
+    <string name="local_recognize_preview">Hiện tại: %1$s — %2$s\n\nNhận diện: %3$s — %4$s\n\nChỉ thay tên bài và nghệ sĩ trong thư viện. Album, ảnh bìa, lời và file nhạc gốc được giữ nguyên.</string>
+    <string name="local_recognize_consent">Mochy đọc tối đa 12 giây âm thanh từ file trên thiết bị rồi gửi dấu vân tay âm thanh đến Shazam. Cần kết nối mạng, không dùng micro. Bạn được xem kết quả trước khi lưu.</string>
+    <string name="local_recognize_saved">Đã lưu tên bài và nghệ sĩ nhận diện được</string>
+    <string name="local_recognize_apply">Áp dụng kết quả</string>
+    <string name="local_recognize_start">Nhận diện trực tuyến</string>
+</resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="local_recognize_action">Identify this local audio</string>
+    <string name="local_recognize_saving">Saving metadata…</string>
+    <string name="local_recognize_busy">Reading an audio sample and identifying it online…</string>
+    <string name="local_recognize_error">No result was obtained. Check your network, turn off offline mode and try again. Short clips, remixes or unsupported files may not match.</string>
+    <string name="local_recognize_preview">Current: %1$s — %2$s\n\nIdentified: %3$s — %4$s\n\nOnly the library title and artist will change. Album, artwork, lyrics and the original audio file stay unchanged.</string>
+    <string name="local_recognize_consent">Mochy reads up to 12 seconds from this file locally and sends its audio fingerprint to Shazam. Internet access is required. No microphone is used. Review the result before saving.</string>
+    <string name="local_recognize_saved">Saved the identified title and artist</string>
+    <string name="local_recognize_apply">Apply result</string>
+    <string name="local_recognize_start">Identify online</string>
+</resources>
